@@ -171,3 +171,55 @@ figure;
 surf(x1, x2, Generalized_inverse_2);
 shading interp; colormap('jet');
 title('Generalized_inverse_2 (d=2, beta = 1)');
+
+Franke = @(x1, x2) 0.75 * exp(-((9*x1 - 2).^2 + (9*x2 - 2).^2) / 4) + ...
+    0.75 * exp(-((9*x1 + 1).^2) / 49 - (9*x2 + 1) / 10) + ...
+    0.5  * exp(-((9*x1 - 7).^2 + (9*x2 - 3).^2) / 4) - ...
+    0.2  * exp(-((9*x1 - 4).^2 + (9*x2 - 7).^2));
+
+eps = 2.0; % Şekil parametresi
+phi = @(r) exp(-(eps * r).^2);
+
+i = 50; 
+
+% 1. Halton Noktaları
+p = haltonset(2); 
+halton_points = net(p, i); 
+x1 = halton_points(:,1);
+x2 = halton_points(:,2);
+F = Franke(x1,x2);
+
+[x_t1,x_t2] = meshgrid(linspace(0, 1, 20));
+
+% 2. RBF Matrisi Kurulumu (A)
+A = zeros(i, i);
+for k = 1:i
+    for j = 1:i
+        r = sqrt((x1(k) - x1(j)).^2 + (x2(k) - x2(j)).^2); 
+        A(k,j) = phi(r);
+    end
+end
+
+% 3. Katsayıları Çözme
+lambda = A \ F;
+
+% 4. Fonksiyon Elde Edimi
+S_pred = zeros(size(x_t1));
+for k = 1:numel(x_t1)
+    sum_val = 0;
+    for j = 1:i
+        r = sqrt((x_t1(k) - x1(j)).^2 + (x_t2(k) - x2(j)).^2);
+        sum_val = sum_val + lambda(j) * phi(r);
+    end
+    S_pred(k) = sum_val;
+end
+F_real = Franke(x_t1, x_t2);
+figure;
+surf(x_t1, x_t2, F_real);
+shading interp; colormap('jet');
+title('Franke, d=2');
+
+figure;
+surf(x_t1, x_t2, S_pred);
+shading interp; colormap('jet');
+title('S_pred, d=2');
